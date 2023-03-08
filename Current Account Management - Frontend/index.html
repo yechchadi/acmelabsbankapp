@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Current Account Management</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  </head>
+  <body>
+
+
+      
+
+    <div class="container">
+        <h1 class="text-center">Current Account Management</h1>
+
+        <div class="row justify-content-center">
+          <div class="col-6 bg-light border border-2 rounded-2">
+            <form class="row g-3" style="margin-top: initial;" onsubmit="return false;">
+                <div class="col-auto">
+                  <h6 class="form-control-plaintext">Customer Code</h6>
+                </div>
+                <div class="col-5">
+                  <label for="inputPassword2" class="visually-hidden">Password</label>
+                  <input type="text" class="form-control" id="customerID1" placeholder="Customer Identification Code">
+                </div>
+                <div class="col-4">
+                  <button type="submit" onclick="get_customer()" class="btn btn-primary mb-3">Get Customer</button>
+                </div>
+              </form>
+          </div>
+          <div class="col-6 bg-light border border-2 rounded-2">
+            <h6 class="form-control-plaintext">Customer Information <span class="float-end">#<span id="customerID"></span></span></h6>
+            <div class="row justify-content-center">
+
+                <div class="col-5">
+                    <p><b>Name : </b><span id="customerName"></span></p>
+                </div>
+                <div class="col-5">
+                    <p><b>Surname : </b><span id="customerSurame"></span></p>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-6 bg-light border border-2 rounded-2">
+                  <div class="col-auto">
+                    <h6 class="form-control-plaintext">New Account</h6>
+                  </div>
+                <form class="row g-3" style="margin-top: initial;" onsubmit="return false;">
+                    <div class="form-group">
+                      <label for="customerID">Customer ID</label>
+                      <input type="text" class="form-control" readonly id="customerID2" name="customerID" placeholder="Enter customer ID">
+                    </div>
+                    <div class="form-group">
+                      <label for="initialCredit">Initial Credit</label>
+                      <input type="text" class="form-control" readonly id="initialCredit" name="initialCredit" placeholder="Enter initial credit">
+                    </div>
+                    <button type="submit" onclick="open_account()" disabled id="open_account_btn"  class="btn btn-primary mb-3">Open Account</button>
+                  </form>
+            </div>
+            <div class="col-6 bg-light border border-2 rounded-2">
+              <h6 class="form-control-plaintext">Accounts</h6>
+              <div class="row justify-content-center">
+  
+                <div class="accordion" id="accounts">
+
+                  </div>
+              </div>
+            </div>
+          </div>
+
+
+    </div>
+    <!-- Modal -->
+<div class="modal fade" id="alert" tabindex="-1" aria-labelledby="alert" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Alert</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <span id="alert_message"></span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+
+    <script>
+        function open_account(){
+            let customerID = document.getElementById('customerID2').value;
+            let initialCredit = document.getElementById('initialCredit').value;
+            var requestOptions = {
+            method: 'POST',
+            redirect: 'follow'            
+            };
+
+            fetch("http://localhost:8080/account/create?customerID="+customerID+"&initialCredit="+initialCredit, requestOptions)
+            .then(response => response.text())
+            .then(result => {
+                get_customer()            
+            })
+            .catch(error => console.log('error', error));
+            document.getElementById('accounts').innerHTML= '';
+        }       
+
+        var myModal = new bootstrap.Modal(document.getElementById('alert'))
+
+        function get_customer(){
+
+            let customerID = document.getElementById('customerID1').value;
+
+            if(customerID==''){
+                document.getElementById('alert_message').innerHTML = 'Customer ID shouldn\'t be empty in order to proceed';
+                myModal.show()
+            }
+            else {
+            
+            document.getElementById('accounts').innerHTML= '';
+
+            let obj = {};
+            document.getElementById('customerID2').value = customerID;
+
+            var requestOptions = {
+            method: 'GET',
+            redirect: 'follow',
+            'Access-Control-Allow-Origin': 'https://localhost:8080'
+            };
+
+            fetch("http://localhost:8080/customer?customerID="+customerID, requestOptions)
+            .then((res) => res.json())
+            .then(data => {
+                obj = data;
+            })
+            .then(() => {
+                showCustomerDetails(obj)
+
+            })
+            .catch(error => console.log('error', error));
+
+            
+            function showCustomerDetails(obj) {
+
+                if(!obj.name){
+                    document.getElementById('initialCredit').readOnly= true;
+                    document.getElementById('open_account_btn').disabled = true;
+                    document.getElementById('customerID2').value = '';
+                    document.getElementById('customerName').innerHTML = '';
+                    document.getElementById('customerSurame').innerHTML = '';
+                    document.getElementById('customerID').innerHTML = '';                    
+                    document.getElementById('alert_message').innerHTML = 'Customer Not Found';
+                    myModal.show()
+
+                } else {
+                document.getElementById('initialCredit').readOnly= false;
+                document.getElementById('open_account_btn').disabled = false;
+                document.getElementById('customerName').innerHTML = obj.name;
+                document.getElementById('customerSurame').innerHTML = obj.surname;
+                document.getElementById('customerID').innerHTML = obj.customerID;
+                
+                obj.accounts.forEach(account => {
+
+                    // create accordion item div
+                    const accordionItem = document.createElement('div');
+                    accordionItem.classList.add('accordion-item');
+
+                    // create accordion header h2
+                    const accordionHeader = document.createElement('h2');
+                    accordionHeader.classList.add('accordion-header');
+                    accordionHeader.setAttribute('id', 'heading'+account.accountID);
+
+                    // create accordion button
+                    const accordionButton = document.createElement('button');
+                    accordionButton.classList.add('accordion-button');
+                    accordionButton.classList.add('collapsed');
+                    accordionButton.setAttribute('type', 'button');
+                    accordionButton.setAttribute('data-bs-toggle', 'collapse');
+                    accordionButton.setAttribute('data-bs-target', '#collapse'+account.accountID);
+                    accordionButton.setAttribute('aria-expanded', 'true');
+                    accordionButton.setAttribute('aria-controls', 'collapse'+account.accountID);
+                    accordionButton.innerHTML = 'Account #'+account.accountID+'&nbsp; &nbsp; &nbsp; <b>Balance: </b>'+account.balance;
+
+                    // append accordion button to accordion header
+                    accordionHeader.appendChild(accordionButton);
+
+                    // create accordion collapse div
+                    const accordionCollapse = document.createElement('div');
+                    accordionCollapse.classList.add('accordion-collapse', 'collapse');
+                    accordionCollapse.setAttribute('id', 'collapse'+account.accountID);
+                    accordionCollapse.setAttribute('aria-labelledby', 'heading'+account.accountID);
+                    accordionCollapse.setAttribute('data-bs-parent', '#accounts');
+
+                    // create accordion body div
+                    const accordionBody = document.createElement('div');
+                    accordionBody.classList.add('accordion-body');
+
+                    // Create the table element
+                    const table = document.createElement('table');
+                    table.classList.add('table');
+
+                    // Create the table header row
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+
+                    // Add the first header column
+                    const headerCol1 = document.createElement('th');
+                    headerCol1.setAttribute('scope', 'col');
+                    headerCol1.textContent = '#Transaction ID';
+                    headerRow.appendChild(headerCol1);
+
+                    // Add the second header column
+                    const headerCol2 = document.createElement('th');
+                    headerCol2.setAttribute('scope', 'col');
+                    headerCol2.textContent = 'Amount';
+                    headerRow.appendChild(headerCol2);
+
+                    // Add the third header column
+                    const headerCol3 = document.createElement('th');
+                    headerCol3.setAttribute('scope', 'col');
+                    headerCol3.textContent = 'Date';
+                    headerRow.appendChild(headerCol3);
+
+                    // Append the header row to the table
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    // Create the table body
+                    const tbody = document.createElement('tbody');
+
+
+                    account.transactions.forEach(transaction => {
+                                            // Create the first row of data
+                    const dataRow1 = document.createElement('tr');
+
+                    // Add the first data column
+                    const dataCol1 = document.createElement('th');
+                    dataCol1.setAttribute('scope', 'row');
+                    dataCol1.textContent = transaction.transactionID;
+                    dataRow1.appendChild(dataCol1);
+
+                    // Add the second data column
+                    const dataCol2 = document.createElement('td');
+                    dataCol2.textContent = transaction.amount;
+                    dataRow1.appendChild(dataCol2);
+
+                    // Add the third data column
+                    const dataCol3 = document.createElement('td');
+                    dataCol3.textContent = transaction.date;
+                    dataRow1.appendChild(dataCol3);
+
+                    // Append the first row of data to the table body
+                    tbody.appendChild(dataRow1);
+                    });
+
+
+                    // Append the table body to the table
+                    table.appendChild(tbody);
+
+                    // Append the table to the accordion body
+                    accordionBody.appendChild(table);
+
+
+                    // append accordion body to accordion collapse
+                    accordionCollapse.appendChild(accordionBody);
+
+                    // append accordion header and accordion collapse to accordion item
+                    accordionItem.appendChild(accordionHeader);
+                    accordionItem.appendChild(accordionCollapse);
+
+                    // append accordion item to parent element
+                    const parentElement = document.getElementById('parentElement');
+                    var accounts = document.getElementById('accounts');
+                    accounts.appendChild(accordionItem);
+
+
+                });
+            }
+        }
+        }
+        }
+        
+
+        
+    </script>
+
+  </body>
+</html>
